@@ -1,8 +1,8 @@
 /* ******************************************************************
  * Constantes de configuration
  * ****************************************************************** */
-const apiKey = "key1"; //"69617e9b-19db-4bf7-a33f-18d4e90ccab7";
-const serverUrl = "http://localhost:8080";
+const apiKey = "49ed5561-ddb3-433e-8a69-45ab8c1e120b"; // Clé du serveur
+const serverUrl = "https://lifap5.univ-lyon1.fr"; // Url du serveur
 
 /* ******************************************************************
  * Gestion de la boîte de dialogue (a.k.a. modal) d'affichage de
@@ -14,18 +14,18 @@ const serverUrl = "http://localhost:8080";
  * @returns une promesse du login utilisateur ou du message d'erreur
  */
 function fetchWhoami() {
-  return fetch(serverUrl + "/whoami", { headers: { "Api-Key": apiKey } })
-    .then((response) => {
-      if (response.status === 401) {
-        return response.json().then((json) => {
-          console.log(json);
-          return { err: json.message };
-        });
-      } else {
-        return response.json();
-      }
-    })
-    .catch((erreur) => ({ err: erreur }));
+    return fetch(serverUrl + "/whoami", { headers: { "Api-Key": apiKey } })
+        .then((response) => {
+            if (response.status === 401) {
+                return response.json().then((json) => {
+                    console.log(json);
+                    return { err: json.message };
+                });
+            } else {
+                return response.json();
+            }
+        })
+        .catch((erreur) => ({ err: erreur }));
 }
 
 /**
@@ -35,14 +35,17 @@ function fetchWhoami() {
  * @param {Etat} etatCourant l'état courant
  * @returns Une promesse de mise à jour
  */
+
+
+
 function lanceWhoamiEtInsereLogin(etatCourant) {
-  return fetchWhoami().then((data) => {
-    majEtatEtPage(etatCourant, {
-      login: data.user, // qui vaut undefined en cas d'erreur
-      errLogin: data.err, // qui vaut undefined si tout va bien
-      loginModal: true, // on affiche la modale
+    return fetchWhoami().then((data) => {
+        majEtatEtPage(etatCourant, {
+            login: data.user, // qui vaut undefined en cas d'erreur
+            errLogin: data.err, // qui vaut undefined si tout va bien
+            loginModal: true, // on affiche la modale
+        });
     });
-  });
 }
 
 /**
@@ -54,18 +57,18 @@ function lanceWhoamiEtInsereLogin(etatCourant) {
  * dans le champ callbacks
  */
 function genereModaleLoginBody(etatCourant) {
-  const text =
-    etatCourant.errLogin !== undefined
-      ? etatCourant.errLogin
-      : etatCourant.login;
-  return {
-    html: `
+    const text =
+        etatCourant.errLogin !== undefined ?
+        etatCourant.errLogin :
+        etatCourant.login;
+    return {
+        html: `
   <section class="modal-card-body">
     <p>${text}</p>
   </section>
   `,
-    callbacks: {},
-  };
+        callbacks: {},
+    };
 }
 
 /**
@@ -76,8 +79,8 @@ function genereModaleLoginBody(etatCourant) {
  * des callbacks à enregistrer dans le champ callbacks
  */
 function genereModaleLoginHeader(etatCourant) {
-  return {
-    html: `
+    return {
+        html: `
 <header class="modal-card-head  is-back">
   <p class="modal-card-title">Utilisateur</p>
   <button
@@ -86,12 +89,12 @@ function genereModaleLoginHeader(etatCourant) {
     aria-label="close"
     ></button>
 </header>`,
-    callbacks: {
-      "btn-close-login-modal1": {
-        onclick: () => majEtatEtPage(etatCourant, { loginModal: false }),
-      },
-    },
-  };
+        callbacks: {
+            "btn-close-login-modal1": {
+                onclick: () => majEtatEtPage(etatCourant, { loginModal: false }),
+            },
+        },
+    };
 }
 
 /**
@@ -102,18 +105,18 @@ function genereModaleLoginHeader(etatCourant) {
  * des callbacks à enregistrer dans le champ callbacks
  */
 function genereModaleLoginFooter(etatCourant) {
-  return {
-    html: `
+    return {
+        html: `
   <footer class="modal-card-foot" style="justify-content: flex-end">
     <button id="btn-close-login-modal2" class="button">Fermer</button>
   </footer>
   `,
-    callbacks: {
-      "btn-close-login-modal2": {
-        onclick: () => majEtatEtPage(etatCourant, { loginModal: false }),
-      },
-    },
-  };
+        callbacks: {
+            "btn-close-login-modal2": {
+                onclick: () => majEtatEtPage(etatCourant, { loginModal: false }),
+            },
+        },
+    };
 }
 
 /**
@@ -124,12 +127,12 @@ function genereModaleLoginFooter(etatCourant) {
  * des callbacks à enregistrer dans le champ callbacks
  */
 function genereModaleLogin(etatCourant) {
-  const header = genereModaleLoginHeader(etatCourant);
-  const footer = genereModaleLoginFooter(etatCourant);
-  const body = genereModaleLoginBody(etatCourant);
-  const activeClass = etatCourant.loginModal ? "is-active" : "is-inactive";
-  return {
-    html: `
+    const header = genereModaleLoginHeader(etatCourant);
+    const footer = genereModaleLoginFooter(etatCourant);
+    const body = genereModaleLoginBody(etatCourant);
+    const activeClass = etatCourant.loginModal ? "is-active" : "is-inactive";
+    return {
+        html: `
       <div id="mdl-login" class="modal ${activeClass}">
         <div class="modal-background"></div>
         <div class="modal-card">
@@ -138,8 +141,8 @@ function genereModaleLogin(etatCourant) {
           ${footer.html}
         </div>
       </div>`,
-    callbacks: { ...header.callbacks, ...footer.callbacks, ...body.callbacks },
-  };
+        callbacks: {...header.callbacks, ...footer.callbacks, ...body.callbacks },
+    };
 }
 
 /* ************************************************************************
@@ -153,7 +156,7 @@ function genereModaleLogin(etatCourant) {
  * @param {Etat} etatCourant
  */
 function afficheModaleConnexion(etatCourant) {
-  lanceWhoamiEtInsereLogin(etatCourant);
+    lanceWhoamiEtInsereLogin(etatCourant);
 }
 
 /**
@@ -164,7 +167,7 @@ function afficheModaleConnexion(etatCourant) {
  * des callbacks à enregistrer dans le champ callbacks
  */
 function genereBoutonConnexion(etatCourant) {
-  const html = `
+    const html = `
   <div class="navbar-end">
     <div class="navbar-item">
       <div class="buttons">
@@ -172,14 +175,14 @@ function genereBoutonConnexion(etatCourant) {
       </div>
     </div>
   </div>`;
-  return {
-    html: html,
-    callbacks: {
-      "btn-open-login-modal": {
-        onclick: () => afficheModaleConnexion(etatCourant),
-      },
-    },
-  };
+    return {
+        html: html,
+        callbacks: {
+            "btn-open-login-modal": {
+                onclick: () => afficheModaleConnexion(etatCourant),
+            },
+        },
+    };
 }
 
 /**
@@ -189,9 +192,9 @@ function genereBoutonConnexion(etatCourant) {
  * des callbacks à enregistrer dans le champ callbacks
  */
 function genereBarreNavigation(etatCourant) {
-  const connexion = genereBoutonConnexion(etatCourant);
-  return {
-    html: `
+    const connexion = genereBoutonConnexion(etatCourant);
+    return {
+        html: `
   <nav class="navbar" role="navigation" aria-label="main navigation">
     <div class="navbar">
       <div class="navbar-item"><div class="buttons">
@@ -201,12 +204,165 @@ function genereBarreNavigation(etatCourant) {
       ${connexion.html}
     </div>
   </nav>`,
-    callbacks: {
-      ...connexion.callbacks,
-      "btn-pokedex": { onclick: () => console.log("click bouton pokedex") },
-    },
-  };
+        callbacks: {
+            ...connexion.callbacks,
+            "btn-pokedex": { onclick: () => console.log("click bouton pokedex") },
+        },
+    };
 }
+
+function genereListPokemon(etatCourant) {
+    const ligneTab = etatCourant.pokemons.map((pokemon) => `<tr id="pokemon-${pokemon.PokedexNumber}" class="${etatCourant.pokemon && etatCourant.pokemon.PokedexNumber ==  pokemon.PokedexNumber ? "is-selected" : ""}">
+  <td><img src="${pokemon.Images.Detail}" alt="${pokemon.Name}"/></td>
+  <td>${pokemon.PokedexNumber}</td>
+  <td>${pokemon.Name}</td>
+  <td>${pokemon.Abilities.join("\n")}</td>
+  <td>${pokemon.Types.join("\n")}</td>
+  </tr>`).join("")
+
+    // On crée un tableau avec les callbacks pour chaque pokemon du tableau
+    const callbacks = etatCourant.pokemons.map((pokemon) => ({
+        [`pokemon-${pokemon.PokedexNumber}`]: {
+            onclick: () => {
+                console.log("click pokemon", pokemon.PokedexNumber);
+                majEtatEtPage(etatCourant, { pokemon: pokemon });
+            },
+        },
+    }))
+
+    const html = `<table class="table is-fullwidth">
+              <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>#<i class="fas fa-angle-up"></i></th>
+                        <th>Name</th>
+                        <th>Abilities</th>
+                        <th>Types</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${ligneTab}
+                </tbody>
+              </table>`
+
+    return {
+        html: html,
+        callbacks: callbacks.reduce((acc, cur) => ({...acc, ...cur }), {}) // On fusionne les callbacks avec le reduce car c'est pas un objet mais plutôt une liste 
+    }
+}
+
+
+function genereInfosPokemon(etatCourant) {
+    if (!etatCourant.pokemon) return { html: "", callbacks: {} };
+
+    const pokemon = etatCourant.pokemon
+
+    const html = ` <div class="card">
+                  <div class="card-header">
+                    <div class="card-header-title">${pokemon.JapaneseName} (#${pokemon.PokedexNumber})</div>
+                  </div>
+                  <div class="card-content">
+                    <article class="media">
+                      <div class="media-content">
+                        <h1 class="title">${pokemon.Name}</h1>
+                      </div>
+                    </article>
+                  </div>
+                  <div class="card-content">
+                    <article class="media">
+                      <div class="media-content">
+                        <div class="content has-text-left">
+                          <p>Hit points: ${pokemon.Attack}</p>
+                          <h3>Abilities :</h3>
+                          <ul>
+                              <li>
+                                  ${pokemon.Abilities.join("</li><li>")}
+                              </li>
+                          </ul>
+                          <h3>Resistant against :</h3>
+                          <ul>
+                              <li>
+                                  ${Object.keys(pokemon.Against).filter(x => pokemon.Against[x] < 1).join("</li><li>")}
+                              </li>
+                          </ul>
+                          <h3>Weak against :</h3>
+                          <ul>
+                              <li>
+                                  ${Object.keys(pokemon.Against).filter(x => pokemon.Against[x] > 1).join("</li><li>")}
+                              </li>
+                          </ul>
+                            
+                          </ul>
+                        </div>
+                      </div>
+                      <figure class="media-right">
+                        <figure class="image is-475x475">
+                          <img
+                            class=""
+                            src="${pokemon.Images.Full}"
+                            alt="${pokemon.name}"
+                          />
+                        </figure>
+                      </figure>
+                    </article>
+                  </div>
+                  <div class="card-footer">
+                    <article class="media">
+                      <div class="media-content">
+                        <button class="is-success button" tabindex="0">
+                          Ajouter à mon deck
+                        </button>
+                      </div>
+                    </article>
+                  </div>
+                </div>`
+
+
+
+    return {
+        html: html,
+        callbacks: {}
+    }
+}
+
+function generePagePokedex(etatCourant) {
+    const TabPokemon = genereListPokemon(etatCourant)
+    const pokemonInfos = genereInfosPokemon(etatCourant)
+    const html = ` <section class="section">
+                  <div class="columns">
+                    <div class="column">
+                      <div class="tabs is-centered">
+                        <ul>
+                          <li class="is-active" id="tab-all-pokemons">
+                            <a>Tous les pokemons</a>
+                          </li>
+                          <li id="tab-tout"><a>Mes pokemons</a></li>
+                        </ul>
+                      </div>
+                      <div id="tbl-pokemons">
+                      ${TabPokemon.html}
+                      </div>
+                    </div>
+                    <div class="column">
+                      ${pokemonInfos.html}
+                    </div>
+                  </div>
+                </section>`
+
+
+
+    return {
+        html: html,
+        callbacks: TabPokemon.callbacks
+    }
+}
+
+function genereCorpsPage(etatCourant) {
+    return generePagePokedex(etatCourant);
+}
+
+
+
 
 /**
  * Génére le code HTML de la page ainsi que l'ensemble des callbacks à
@@ -216,20 +372,22 @@ function genereBarreNavigation(etatCourant) {
  * @returns un objet contenant le code HTML dans le champ html et la description
  * des callbacks à enregistrer dans le champ callbacks
  */
+
 function generePage(etatCourant) {
-  const barredeNavigation = genereBarreNavigation(etatCourant);
-  const modaleLogin = genereModaleLogin(etatCourant);
-  // remarquer l'usage de la notation ... ci-dessous qui permet de "fusionner"
-  // les dictionnaires de callbacks qui viennent de la barre et de la modale.
-  // Attention, les callbacks définis dans modaleLogin.callbacks vont écraser
-  // ceux définis sur les mêmes éléments dans barredeNavigation.callbacks. En
-  // pratique ce cas ne doit pas se produire car barreDeNavigation et
-  // modaleLogin portent sur des zone différentes de la page et n'ont pas
-  // d'éléments en commun.
-  return {
-    html: barredeNavigation.html + modaleLogin.html,
-    callbacks: { ...barredeNavigation.callbacks, ...modaleLogin.callbacks },
-  };
+    const barredeNavigation = genereBarreNavigation(etatCourant);
+    const modaleLogin = genereModaleLogin(etatCourant);
+    const CorpsPage = genereCorpsPage(etatCourant);
+    // remarquer l'usage de la notation ... ci-dessous qui permet de "fusionner"
+    // les dictionnaires de callbacks qui viennent de la barre et de la modale.
+    // Attention, les callbacks définis dans modaleLogin.callbacks vont écraser
+    // ceux définis sur les mêmes éléments dans barredeNavigation.callbacks. En
+    // pratique ce cas ne doit pas se produire car barreDeNavigation et
+    // modaleLogin portent sur des zone différentes de la page et n'ont pas
+    // d'éléments en commun.
+    return {
+        html: barredeNavigation.html + modaleLogin.html + CorpsPage.html,
+        callbacks: {...barredeNavigation.callbacks, ...modaleLogin.callbacks, ...CorpsPage.callbacks, },
+    };
 }
 
 /* ******************************************************************
@@ -247,8 +405,8 @@ function generePage(etatCourant) {
  * que leur (nouvelle) valeur.
  */
 function majEtatEtPage(etatCourant, champsMisAJour) {
-  const nouvelEtat = { ...etatCourant, ...champsMisAJour };
-  majPage(nouvelEtat);
+    const nouvelEtat = {...etatCourant, ...champsMisAJour };
+    majPage(nouvelEtat);
 }
 
 /**
@@ -271,18 +429,18 @@ function majEtatEtPage(etatCourant, champsMisAJour) {
  * dictionnaire qui associe des champs "on..." aux callbacks désirés.
  */
 function enregistreCallbacks(callbacks) {
-  Object.keys(callbacks).forEach((id) => {
-    const elt = document.getElementById(id);
-    if (elt === undefined || elt === null) {
-      console.log(
-        `Élément inconnu: ${id}, impossible d'enregistrer de callback sur cet id`
-      );
-    } else {
-      Object.keys(callbacks[id]).forEach((onAction) => {
-        elt[onAction] = callbacks[id][onAction];
-      });
-    }
-  });
+    Object.keys(callbacks).forEach((id) => {
+        const elt = document.getElementById(id);
+        if (elt === undefined || elt === null) {
+            console.log(
+                `Élément inconnu: ${id}, impossible d'enregistrer de callback sur cet id`
+            );
+        } else {
+            Object.keys(callbacks[id]).forEach((onAction) => {
+                elt[onAction] = callbacks[id][onAction];
+            });
+        }
+    });
 }
 
 /**
@@ -291,10 +449,30 @@ function enregistreCallbacks(callbacks) {
  * @param {Etat} etatCourant l'état courant
  */
 function majPage(etatCourant) {
-  console.log("CALL majPage");
-  const page = generePage(etatCourant);
-  document.getElementById("root").innerHTML = page.html;
-  enregistreCallbacks(page.callbacks);
+    console.log("CALL majPage");
+    const page = generePage(etatCourant);
+    document.getElementById("root").innerHTML = page.html;
+    enregistreCallbacks(page.callbacks);
+}
+
+/**
+ * Fonction qui permet de récupérer la liste des pokémons dispo sur le serveur
+ * En faisant une requête Fetch à l'url serverUrl + "/pokemon"
+ * @returns La liste des pokémons dispo sur le serveur
+ */
+function getPokemonList() {
+    return fetch(serverUrl + "/pokemon")
+        .then(async(response) => {
+            // Si la réponse est bonne, on retourne la liste des pokémons
+            if (response.status == 200) {
+                const data = (await response.json()).sort((a, b) => a.PokedexNumber - b.PokedexNumber); // On attend la réponse et on met dans data grâce à "AWAIT"
+                return data;
+            } else {
+                // Sinon on retourne un tableau vide
+                return []
+            }
+        }) // La même si une erreur survient on retourne un tableau vide
+        .catch([])
 }
 
 /**
@@ -302,18 +480,20 @@ function majPage(etatCourant) {
  * Met en place la mécanique de gestion des événements
  * en lançant la mise à jour de la page à partir d'un état initial.
  */
-function initClientPokemons() {
-  console.log("CALL initClientPokemons");
-  const etatInitial = {
-    loginModal: false,
-    login: undefined,
-    errLogin: undefined,
-  };
-  majPage(etatInitial);
+async function initClientPokemons() {
+    console.log("CALL initClientPokemons");
+    const etatInitial = {
+        loginModal: false,
+        login: undefined,
+        errLogin: undefined,
+        pokemons: await getPokemonList(),
+    };
+    console.log(etatInitial);
+    majPage(etatInitial);
 }
 
 // Appel de la fonction init_client_duels au après chargement de la page
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("Exécution du code après chargement de la page");
-  initClientPokemons();
+    console.log("Exécution du code après chargement de la page");
+    initClientPokemons();
 });
