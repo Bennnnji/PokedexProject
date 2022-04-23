@@ -14,7 +14,7 @@ const serverUrl = "https://lifap5.univ-lyon1.fr"; // Url du serveur
  * @returns une promesse du login utilisateur ou du message d'erreur
  */
 function fetchWhoami() {
-    return fetch(serverUrl + "/whoami", { headers: { "Api-Key": apiKey } })
+    return fetch(serverUrl + "/whoami", { headers: { "Api-Key": apiKey} })
         .then((response) => {
             if (response.status === 401) {
                 return response.json().then((json) => {
@@ -57,14 +57,14 @@ function lanceWhoamiEtInsereLogin(etatCourant) {
  * dans le champ callbacks
  */
 function genereModaleLoginBody(etatCourant) {
-    const text =
-        etatCourant.errLogin !== undefined ?
-        etatCourant.errLogin :
-        etatCourant.login;
+ 
     return {
         html: `
   <section class="modal-card-body">
-    <p>${text}</p>
+    <div class="field>
+      <label class="label"> <b>Clé d'API</b> <label>
+      <input id="PasswordAPI" type="password" class="input" value>
+    </div>
   </section>
   `,
         callbacks: {},
@@ -92,6 +92,7 @@ function genereModaleLoginHeader(etatCourant) {
         callbacks: {
             "btn-close-login-modal1": {
                 onclick: () => majEtatEtPage(etatCourant, { loginModal: false }),
+                
             },
         },
     };
@@ -108,13 +109,17 @@ function genereModaleLoginFooter(etatCourant) {
     return {
         html: `
   <footer class="modal-card-foot" style="justify-content: flex-end">
-    <button id="btn-close-login-modal2" class="button">Fermer</button>
+    <button id="closeB" tab-index="0" class="button">Fermer</button>
+    <button id="ValiderB" tab-index="0" class="is-success button">Valider</button>
   </footer>
   `,
         callbacks: {
-            "btn-close-login-modal2": {
+            "closeB": {
                 onclick: () => majEtatEtPage(etatCourant, { loginModal: false }),
             },
+            "ValiderB":{
+              onclick: () => //TODO
+            }
         },
     };
 }
@@ -156,7 +161,7 @@ function genereModaleLogin(etatCourant) {
  * @param {Etat} etatCourant
  */
 function afficheModaleConnexion(etatCourant) {
-    lanceWhoamiEtInsereLogin(etatCourant);
+   return lanceWhoamiEtInsereLogin(etatCourant);
 }
 
 /**
@@ -212,12 +217,13 @@ function genereBarreNavigation(etatCourant) {
 }
 
 function genereListPokemon(etatCourant) {
+  
     const ligneTab = etatCourant.pokemons.map((pokemon) => `<tr id="pokemon-${pokemon.PokedexNumber}" class="${etatCourant.pokemon && etatCourant.pokemon.PokedexNumber ==  pokemon.PokedexNumber ? "is-selected" : ""}">
   <td><img src="${pokemon.Images.Detail}" alt="${pokemon.Name}"/></td>
   <td>${pokemon.PokedexNumber}</td>
   <td>${pokemon.Name}</td>
-  <td>${pokemon.Abilities.join("\n")}</td>
-  <td>${pokemon.Types.join("\n")}</td>
+  <td>${pokemon.Abilities.join("</br>")}</td>
+  <td>${pokemon.Types.join("</br>")}</td>
   </tr>`).join("")
 
     // On crée un tableau avec les callbacks pour chaque pokemon du tableau
@@ -297,11 +303,13 @@ function genereInfosPokemon(etatCourant) {
                       </div>
                       <figure class="media-right">
                         <figure class="image is-475x475">
+                        
                           <img
                             class=""
                             src="${pokemon.Images.Full}"
                             alt="${pokemon.name}"
                           />
+                        
                         </figure>
                       </figure>
                     </article>
@@ -454,7 +462,6 @@ function majPage(etatCourant) {
     document.getElementById("root").innerHTML = page.html;
     enregistreCallbacks(page.callbacks);
 }
-
 /**
  * Fonction qui permet de récupérer la liste des pokémons dispo sur le serveur
  * En faisant une requête Fetch à l'url serverUrl + "/pokemon"
