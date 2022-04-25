@@ -14,7 +14,7 @@ const serverUrl = "https://lifap5.univ-lyon1.fr"; // Url du serveur
  * @returns une promesse du login utilisateur ou du message d'erreur
  */
 function fetchWhoami() {
-    return fetch(serverUrl + "/whoami", { headers: { "Api-Key": apiKey} })
+    return fetch(serverUrl + "/whoami", { headers: { "Api-Key": document.getElementById("PasswordAPI").value} })
         .then((response) => {
             if (response.status === 401) {
                 return response.json().then((json) => {
@@ -43,8 +43,10 @@ function lanceWhoamiEtInsereLogin(etatCourant) {
         majEtatEtPage(etatCourant, {
             login: data.user, // qui vaut undefined en cas d'erreur
             errLogin: data.err, // qui vaut undefined si tout va bien
-            loginModal: true, // on affiche la modale
+            loginModal: false, // on affiche la modale
+
         });
+        console.log("User",data.user)
     });
 }
 
@@ -109,6 +111,7 @@ function genereModaleLoginFooter(etatCourant) {
     return {
         html: `
   <footer class="modal-card-foot" style="justify-content: flex-end">
+  <p id="Message Erreur"></p>
     <button id="closeB" tab-index="0" class="button">Fermer</button>
     <button id="ValiderB" tab-index="0" class="is-success button">Valider</button>
   </footer>
@@ -118,8 +121,9 @@ function genereModaleLoginFooter(etatCourant) {
                 onclick: () => majEtatEtPage(etatCourant, { loginModal: false }),
             },
             "ValiderB":{
-              onclick: () => //TODO
-            }
+              onclick: () => document.getElementById("PasswordAPI").value === "" ? 
+                             document.getElementById("Message Erreur").innerHTML = "Clé Invalide" : lanceWhoamiEtInsereLogin(etatCourant)
+            },
         },
     };
 }
@@ -161,7 +165,7 @@ function genereModaleLogin(etatCourant) {
  * @param {Etat} etatCourant
  */
 function afficheModaleConnexion(etatCourant) {
-   return lanceWhoamiEtInsereLogin(etatCourant);
+   return majEtatEtPage(etatCourant, {loginModal : true});
 }
 
 /**
@@ -172,20 +176,23 @@ function afficheModaleConnexion(etatCourant) {
  * des callbacks à enregistrer dans le champ callbacks
  */
 function genereBoutonConnexion(etatCourant) {
+
+  
     const html = `
   <div class="navbar-end">
     <div class="navbar-item">
-      <div class="buttons">
-        <a id="btn-open-login-modal" class="button is-light"> Connexion </a>
-      </div>
+        <a id="${etatCourant.login ? "btnDeconnexion" : "btnConnexion"}" class="button ${etatCourant.login ? "is-danger" : "is-primary"}"> ${etatCourant.login ? "Déconnexion" : "Connexion"} </a>
     </div>
   </div>`;
     return {
         html: html,
         callbacks: {
-            "btn-open-login-modal": {
+            "btnConnexion": {
                 onclick: () => afficheModaleConnexion(etatCourant),
             },
+            "btnDeconnexion": {
+              onclick: () => majEtatEtPage(etatCourant, {login : undefined}),
+          },
         },
     };
 }
@@ -206,7 +213,10 @@ function genereBarreNavigation(etatCourant) {
           <a id="btn-pokedex" class="button is-light"> Pokedex </a>
           <a id="btn-combat" class="button is-light"> Combat </a>
       </div></div>
+      ${etatCourant.login == undefined ? "": `<div class="navbar-item"> ${etatCourant.login}</div>` }
       ${connexion.html}
+     
+     
     </div>
   </nav>`,
         callbacks: {
@@ -219,7 +229,7 @@ function genereBarreNavigation(etatCourant) {
 function genereListPokemon(etatCourant) {
   
     const ligneTab = etatCourant.pokemons.map((pokemon) => `<tr id="pokemon-${pokemon.PokedexNumber}" class="${etatCourant.pokemon && etatCourant.pokemon.PokedexNumber ==  pokemon.PokedexNumber ? "is-selected" : ""}">
-  <td><img src="${pokemon.Images.Detail}" alt="${pokemon.Name}"/></td>
+  <td><img src="${pokemon.Images.Detail}" width="74" alt="${pokemon.Name}"/></td>
   <td>${pokemon.PokedexNumber}</td>
   <td>${pokemon.Name}</td>
   <td>${pokemon.Abilities.join("</br>")}</td>
@@ -279,19 +289,19 @@ function genereInfosPokemon(etatCourant) {
                       <div class="media-content">
                         <div class="content has-text-left">
                           <p>Hit points: ${pokemon.Attack}</p>
-                          <h3>Abilities :</h3>
+                          <h3>Abilities</h3>
                           <ul>
                               <li>
                                   ${pokemon.Abilities.join("</li><li>")}
                               </li>
                           </ul>
-                          <h3>Resistant against :</h3>
+                          <h3>Resistant against</h3>
                           <ul>
                               <li>
                                   ${Object.keys(pokemon.Against).filter(x => pokemon.Against[x] < 1).join("</li><li>")}
                               </li>
                           </ul>
-                          <h3>Weak against :</h3>
+                          <h3>Weak against</h3>
                           <ul>
                               <li>
                                   ${Object.keys(pokemon.Against).filter(x => pokemon.Against[x] > 1).join("</li><li>")}
@@ -313,7 +323,7 @@ function genereInfosPokemon(etatCourant) {
                         </figure>
                       </figure>
                     </article>
-                  </div>
+                  ${etatCourant.login == undefined ? "" :` </div>
                   <div class="card-footer">
                     <article class="media">
                       <div class="media-content">
@@ -323,7 +333,8 @@ function genereInfosPokemon(etatCourant) {
                       </div>
                     </article>
                   </div>
-                </div>`
+                </div>`}
+                  `
 
 
 
