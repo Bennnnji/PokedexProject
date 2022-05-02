@@ -13,19 +13,9 @@ const serverUrl = "https://lifap5.univ-lyon1.fr"; // Url du serveur
  * Fait une requête GET authentifiée sur /whoami
  * @returns une promesse du login utilisateur ou du message d'erreur
  */
-function fetchWhoami() {
-    return fetch(serverUrl + "/whoami", { headers: { "Api-Key": document.getElementById("PasswordAPI").value} })
-        .then((response) => {
-            if (response.status === 401) {
-                return response.json().then((json) => {
-                    console.log(json);
-                    return { err: json.message };
-                });
-            } else {
-                return response.json();
-            }
-        })
-        .catch((erreur) => ({ err: erreur }));
+function fetchWhoami(apiKey) {
+    return fetch(serverUrl + "/whoami", { headers: { "Api-Key": apiKey} })
+    
 }
 
 /**
@@ -36,18 +26,27 @@ function fetchWhoami() {
  * @returns Une promesse de mise à jour
  */
 
+function lanceWhoamiEtInsereLogin(etatCourant, apiKey) {
+      return fetchWhoami(apiKey).then((data) => {
 
-
-function lanceWhoamiEtInsereLogin(etatCourant) {
-    return fetchWhoami().then((data) => {
+      if(data.status == 401) return data.json().then((response) => 
+      {
         majEtatEtPage(etatCourant, {
-            login: data.user, // qui vaut undefined en cas d'erreur
-            errLogin: data.err, // qui vaut undefined si tout va bien
-            loginModal: false, // on affiche la modale
+          login: undefined, // qui vaut undefined en cas d'erreur
+          errLogin: response.message, // qui vaut undefined si tout va bien
+          apiKey : apiKey,
 
         });
-        console.log("User",data.user)
-    });
+      });
+      return data.json().then((data) => 
+      {
+        majEtatEtPage(etatCourant, {
+          login : data.user,
+          errLogin: undefined,
+          apiKey : apiKey,
+        });
+      })
+})
 }
 
 /**
@@ -59,16 +58,15 @@ function lanceWhoamiEtInsereLogin(etatCourant) {
  * dans le champ callbacks
  */
 function genereModaleLoginBody(etatCourant) {
- 
+  const erreurs = etatCourant.errLogin ? etatCourant.errLogin : "";
+  const login = etatCourant.login ? etatCourant.login : "";
+  const content = `<div class="field">
+                        ${login ? `<p>Connexion en tant que : <strong>${login}</strong></p>` : `
+                        <label class="label">API Key</label>
+                        <input id="modal-login-input" class="input" value="${etatCourant.apiKey ? etatCourant.apiKey : ''}">`}
+                    </div>`
     return {
-        html: `
-  <section class="modal-card-body">
-    <div class="field>
-      <label class="label"> <b>Clé d'API</b> <label>
-      <input id="PasswordAPI" type="password" class="input" value>
-    </div>
-  </section>
-  `,
+        html:`<section class="modal-card-body">${content}${erreurs}</section>`,
         callbacks: {},
     };
 }
@@ -83,14 +81,10 @@ function genereModaleLoginBody(etatCourant) {
 function genereModaleLoginHeader(etatCourant) {
     return {
         html: `
-<header class="modal-card-head  is-back">
-  <p class="modal-card-title">Utilisateur</p>
-  <button
-    id="btn-close-login-modal1"
-    class="delete"
-    aria-label="close"
-    ></button>
-</header>`,
+              <header class="modal-card-head  is-back">
+                <p class="modal-card-title">Utilisateur</p>
+                <button id="btn-close-login-modal1" class="delete" aria-label="close"></button>
+              </header>`,
         callbacks: {
             "btn-close-login-modal1": {
                 onclick: () => majEtatEtPage(etatCourant, { loginModal: false }),
@@ -108,12 +102,13 @@ function genereModaleLoginHeader(etatCourant) {
  * des callbacks à enregistrer dans le champ callbacks
  */
 function genereModaleLoginFooter(etatCourant) {
+  const BoutonValider = etatCourant.login ? "" : `<button id="ValiderB" tab-index="0" class="is-success button">Valider</button>`;
+  const BoutonFermer = `<button id="closeB" tab-index="0" class="button">Fermer</button>`
     return {
         html: `
   <footer class="modal-card-foot" style="justify-content: flex-end">
-  <p id="Message Erreur"></p>
-    <button id="closeB" tab-index="0" class="button">Fermer</button>
-    <button id="ValiderB" tab-index="0" class="is-success button">Valider</button>
+  ${BoutonValider}
+  ${BoutonFermer}
   </footer>
   `,
         callbacks: {
@@ -121,8 +116,8 @@ function genereModaleLoginFooter(etatCourant) {
                 onclick: () => majEtatEtPage(etatCourant, { loginModal: false }),
             },
             "ValiderB":{
-              onclick: () => document.getElementById("PasswordAPI").value === "" ? 
-                             document.getElementById("Message Erreur").innerHTML = "Clé Invalide" : lanceWhoamiEtInsereLogin(etatCourant)
+              onclick: () => {const apiKey = document.getElementById("modal-login-input").value;
+                             lanceWhoamiEtInsereLogin(etatCourant, apiKey)}
             },
         },
     };
@@ -176,12 +171,10 @@ function afficheModaleConnexion(etatCourant) {
  * des callbacks à enregistrer dans le champ callbacks
  */
 function genereBoutonConnexion(etatCourant) {
-
-  
-    const html = `
+    const html = ` ${etatCourant.login != undefined ? `<span class="navbar-item">${etatCourant.login}</span>` : ''}
   <div class="navbar-end">
     <div class="navbar-item">
-        <a id="${etatCourant.login ? "btnDeconnexion" : "btnConnexion"}" class="button ${etatCourant.login ? "is-danger" : "is-primary"}"> ${etatCourant.login ? "Déconnexion" : "Connexion"} </a>
+    ${etatCourant.login == undefined ? `<a id="btnConnexion" class="button is-light"> Connexion </a>` : '<a id="btnDeconnexion" class="button is-danger"> Deconnexion </a>'}
     </div>
   </div>`;
     return {
@@ -208,15 +201,14 @@ function genereBarreNavigation(etatCourant) {
     return {
         html: `
   <nav class="navbar" role="navigation" aria-label="main navigation">
-    <div class="navbar">
-      <div class="navbar-item"><div class="buttons">
+    <div class="navbar-start">
+      <div class="navbar-item">
           <a id="btn-pokedex" class="button is-light"> Pokedex </a>
           <a id="btn-combat" class="button is-light"> Combat </a>
       </div></div>
-      ${etatCourant.login == undefined ? "": `<div class="navbar-item"> ${etatCourant.login}</div>` }
+      <div class="navbar-end">
       ${connexion.html}
-     
-     
+      </div>
     </div>
   </nav>`,
         callbacks: {
@@ -225,10 +217,36 @@ function genereBarreNavigation(etatCourant) {
         },
     };
 }
+function PokemonToShow(etatCourant)
+{
+  const {tri, order} = getTypeOrdreTri(etatCourant); // On récupère le tri et l'ordre
+  const pokemons = etatCourant.pokemons
+  const OrderedListePoke = pokemons.sort((a,b) => {
+    if(tri == "id") return order ? a.PokedexNumber - b.PokedexNumber : b.PokedexNumber - a.PokedexNumber
+    else if(tri == "Name") return order ? a.Name.localeCompare(b.Name) : b.Name.localeCompare(a.Name);
+    else if(tri == "Abilities") return order ? a.Abilities.join("\n").localeCompare(b.Abilities.join("\n")) : b.Abilities.join("\n").localeCompare(a.Abilities.join("\n"));
+    else if(tri == "Types") return order ? a.Types.join("\n").localeCompare(b.Types.join("\n")) : b.Types.join("\n").localeCompare(a.Types.join("\n"));
+  }).filter(x => x.Name.toLowerCase().includes(etatCourant.search ? etatCourant.search.toLowerCase() : ""));
+    return OrderedListePoke
+}
 
-function genereListPokemon(etatCourant) {
+/**
+* Récupèrer le type et l'ordre de tri de la liste des pokémons
+* @param {Etat} etatCourant
+* @returns un objet contenant le type et l'ordre de tri
+*/
+function getTypeOrdreTri(etatCourant) {
+  const sortType = etatCourant.sortType ? etatCourant.sortType : "id";
+  const sortOrder = etatCourant.order != undefined ? etatCourant.order : true;
+  return {
+      tri: sortType,
+      order: sortOrder,
+  }
+}
+
+function genereListPokemon(PokeToShow,etatCourant) {
   
-    const ligneTab = etatCourant.pokemons.map((pokemon) => `<tr id="pokemon-${pokemon.PokedexNumber}" class="${etatCourant.pokemon && etatCourant.pokemon.PokedexNumber ==  pokemon.PokedexNumber ? "is-selected" : ""}">
+  const ligneTab = PokeToShow.map((pokemon) => `<tr id="pokemon-${pokemon.PokedexNumber}" class="${etatCourant.pokemon && etatCourant.pokemon.PokedexNumber ==  pokemon.PokedexNumber ? "is-selected" : ""}">
   <td><img src="${pokemon.Images.Detail}" width="74" alt="${pokemon.Name}"/></td>
   <td>${pokemon.PokedexNumber}</td>
   <td>${pokemon.Name}</td>
@@ -237,7 +255,7 @@ function genereListPokemon(etatCourant) {
   </tr>`).join("")
 
     // On crée un tableau avec les callbacks pour chaque pokemon du tableau
-    const callbacks = etatCourant.pokemons.map((pokemon) => ({
+    const callbacks = PokeToShow.map((pokemon) => ({
         [`pokemon-${pokemon.PokedexNumber}`]: {
             onclick: () => {
                 console.log("click pokemon", pokemon.PokedexNumber);
@@ -250,10 +268,10 @@ function genereListPokemon(etatCourant) {
               <thead>
                     <tr>
                         <th>Image</th>
-                        <th>#<i class="fas fa-angle-up"></i></th>
-                        <th>Name</th>
-                        <th>Abilities</th>
-                        <th>Types</th>
+                        <th id="idSort">#<i class="fas fa-angle-up"></i></th>
+                        <th id="NameSort">Name</th>
+                        <th id="AbilitiesSort">Abilities</th>
+                        <th id="TypesSort">Types</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -263,14 +281,19 @@ function genereListPokemon(etatCourant) {
 
     return {
         html: html,
-        callbacks: callbacks.reduce((acc, cur) => ({...acc, ...cur }), {}) // On fusionne les callbacks avec le reduce car c'est pas un objet mais plutôt une liste 
+        callbacks: {...callbacks.reduce((acc, cur) => ({...acc, ...cur }), {}), // On fusionne les callbacks avec le reduce car c'est pas un objet mais plutôt une liste 
+        "idSort" : {onclick : () => {majEtatEtPage(etatCourant, {sortType : "id", sortOrder : true})}},
+        "NameSort": {onclick : () => {majEtatEtPage(etatCourant, {sortType : "Name", sortOrder : true})}},
+        "AbilitiesSort" : {onclick : () => {majEtatEtPage(etatCourant, {sortType : "Abilities", sortOrder : true})}},
+        "TypesSort" : {onclick : () => {majEtatEtPage(etatCourant, {sortType : "Types", sortOrder : true})}},
+      }
     }
 }
 
 
 function genereInfosPokemon(etatCourant) {
-    if (!etatCourant.pokemon) return { html: "", callbacks: {} };
-
+    
+  if (!etatCourant.pokemon) return { html: "", callbacks: {} };
     const pokemon = etatCourant.pokemon
 
     const html = ` <div class="card">
@@ -344,10 +367,27 @@ function genereInfosPokemon(etatCourant) {
     }
 }
 
+function genereSearchBar(etatCourant)
+{
+    return {
+      html: `
+              <div class="field">
+                <div class="control has-icons-left">
+                  <input id="SearchBar" class="input" placeholder="Chercher un pokemon" type="text" value="">
+              </div></div>` ,
+      callbacks : {
+        "SearchBar" : { onkeyup:(event) => event.code == "Enter" ? majEtatEtPage(etatCourant, {search : document.getElementById("SearchBar").value }) : null}
+      }
+    }
+}
+
 function generePagePokedex(etatCourant) {
-    const TabPokemon = genereListPokemon(etatCourant)
+    const PokeToShow = PokemonToShow(etatCourant)
+    const TabPokemon = genereListPokemon(PokeToShow,etatCourant)
     const pokemonInfos = genereInfosPokemon(etatCourant)
-    const html = ` <section class="section">
+    const SearchBar = genereSearchBar(etatCourant)
+    const html = ` ${SearchBar.html}
+                <section class="section">
                   <div class="columns">
                     <div class="column">
                       <div class="tabs is-centered">
@@ -372,7 +412,7 @@ function generePagePokedex(etatCourant) {
 
     return {
         html: html,
-        callbacks: TabPokemon.callbacks
+        callbacks: {...TabPokemon.callbacks, ...pokemonInfos.callbacks, ...SearchBar.callbacks}
     }
 }
 
