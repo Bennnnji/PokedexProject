@@ -217,35 +217,49 @@ function genereBarreNavigation(etatCourant) {
         },
     };
 }
-function PokemonToShow(etatCourant)
-{
-  const {tri, order} = getTypeOrdreTri(etatCourant); // On récupère le tri et l'ordre
-  const pokemons = etatCourant.pokemons
-  const OrderedListePoke = pokemons.sort((a,b) => {
-    if(tri == "id") return order ? a.PokedexNumber - b.PokedexNumber : b.PokedexNumber - a.PokedexNumber
-    else if(tri == "Name") return order ? a.Name.localeCompare(b.Name) : b.Name.localeCompare(a.Name);
-    else if(tri == "Abilities") return order ? a.Abilities.join("\n").localeCompare(b.Abilities.join("\n")) : b.Abilities.join("\n").localeCompare(a.Abilities.join("\n"));
-    else if(tri == "Types") return order ? a.Types.join("\n").localeCompare(b.Types.join("\n")) : b.Types.join("\n").localeCompare(a.Types.join("\n"));
-  }).filter(x => x.Name.toLowerCase().includes(etatCourant.search ? etatCourant.search.toLowerCase() : ""));
-    return OrderedListePoke
-}
 
 /**
-* Récupèrer le type et l'ordre de tri de la liste des pokémons
-* @param {Etat} etatCourant
-* @returns un objet contenant le type et l'ordre de tri
-*/
+ * Récupèrer le type et l'ordre de tri de la liste des pokémons
+ * @param {Etat} etatCourant
+ * @returns un objet contenant le type et l'ordre de tri
+ */
 function getTypeOrdreTri(etatCourant) {
   const sortType = etatCourant.sortType ? etatCourant.sortType : "id";
-  const sortOrder = etatCourant.order != undefined ? etatCourant.order : true;
+  const sortOrder = etatCourant.sortOrder != undefined ? etatCourant.sortOrder : true;
   return {
-      tri: sortType,
-      order: sortOrder,
+    tri: sortType,
+    order: sortOrder,
   }
 }
 
+function GenereHeaderListPokemon(etatCourant)
+{
+  const {tri, order} = getTypeOrdreTri(etatCourant); // On récupère le tri et l'ordreb
+  return {
+      html: ` <thead>
+                <tr>
+                  <th>Image</th>
+                  <th id="idSort">#<i class="${tri == "id" ? order ? "fas fa-angle-up" : "fas fa-angle-down" : ""}"></i></th>
+                  <th id="NameSort">Name<i class="${tri == "Name" ? order ? "fas fa-angle-up" : "fas fa-angle-down" : ""}"></i></th>
+                  <th id="AbilitiesSort">Abilities<i class="${tri == "Abilities" ? order ? "fas fa-angle-up" : "fas fa-angle-down" : ""}"></i></th>
+                  <th id="TypesSort">Types<i class="${tri == "Types" ? order ? "fas fa-angle-up" : "fas fa-angle-down" : ""}"></i></th>
+                </tr>
+              </thead>
+            `,
+      callbacks: { // On fusionne les callbacks avec le reduce car c'est pas un objet mais plutôt une liste 
+      "idSort" : {onclick : () => majEtatEtPage(etatCourant, {sortType : "id", sortOrder : tri != "id" ? true : !order})},
+      "NameSort": {onclick : () => majEtatEtPage(etatCourant, {sortType : "Name", sortOrder : tri != "Name" ? true : !order})},
+      "AbilitiesSort" : {onclick : () => majEtatEtPage(etatCourant, {sortType : "Abilities", sortOrder : tri != "Abilities" ? true : !order}) },
+      "TypesSort" : {onclick : () => majEtatEtPage(etatCourant, {sortType : "Types", sortOrder : tri != "Types" ? true : !order})},
+    }
+  }
+}
+
+
+
 function genereListPokemon(PokeToShow,etatCourant) {
-  
+  const header = GenereHeaderListPokemon(etatCourant);
+  const {tri, order} = getTypeOrdreTri(etatCourant); // On récupère le tri et l'ordre
   const ligneTab = PokeToShow.map((pokemon) => `<tr id="pokemon-${pokemon.PokedexNumber}" class="${etatCourant.pokemon && etatCourant.pokemon.PokedexNumber ==  pokemon.PokedexNumber ? "is-selected" : ""}">
   <td><img src="${pokemon.Images.Detail}" width="74" alt="${pokemon.Name}"/></td>
   <td>${pokemon.PokedexNumber}</td>
@@ -253,46 +267,41 @@ function genereListPokemon(PokeToShow,etatCourant) {
   <td>${pokemon.Abilities.join("</br>")}</td>
   <td>${pokemon.Types.join("</br>")}</td>
   </tr>`).join("")
-
-    // On crée un tableau avec les callbacks pour chaque pokemon du tableau
-    const callbacks = PokeToShow.map((pokemon) => ({
+  
+  // On crée un tableau avec les callbacks pour chaque pokemon du tableau
+  const callbacks = PokeToShow.map((pokemon) => ({
         [`pokemon-${pokemon.PokedexNumber}`]: {
-            onclick: () => {
-                console.log("click pokemon", pokemon.PokedexNumber);
-                majEtatEtPage(etatCourant, { pokemon: pokemon });
-            },
-        },
-    }))
-
-    const html = `<table class="table is-fullwidth">
-              <thead>
-                    <tr>
-                        <th>Image</th>
-                        <th id="idSort">#<i class="fas fa-angle-up"></i></th>
-                        <th id="NameSort">Name</th>
-                        <th id="AbilitiesSort">Abilities</th>
-                        <th id="TypesSort">Types</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${ligneTab}
-                </tbody>
-              </table>`
-
-    return {
-        html: html,
-        callbacks: {...callbacks.reduce((acc, cur) => ({...acc, ...cur }), {}), // On fusionne les callbacks avec le reduce car c'est pas un objet mais plutôt une liste 
-        "idSort" : {onclick : () => {majEtatEtPage(etatCourant, {sortType : "id", sortOrder : true})}},
-        "NameSort": {onclick : () => {majEtatEtPage(etatCourant, {sortType : "Name", sortOrder : true})}},
-        "AbilitiesSort" : {onclick : () => {majEtatEtPage(etatCourant, {sortType : "Abilities", sortOrder : true})}},
-        "TypesSort" : {onclick : () => {majEtatEtPage(etatCourant, {sortType : "Types", sortOrder : true})}},
+          onclick: () => {
+            console.log("click pokemon", pokemon.PokedexNumber);
+            majEtatEtPage(etatCourant, { pokemon: pokemon });
+          }}}))
+      
+      return {
+        html: `<table class="table is-fullwidth"> 
+                ${header.html} 
+                ${ligneTab} 
+               </table>
+        `,
+        callbacks:{...callbacks.reduce((acc, cur) => ({...acc, ...cur }), {}), ...header.callbacks}
       }
-    }
 }
 
-
-function genereInfosPokemon(etatCourant) {
+  function PokemonToShow(etatCourant)
+{
+  const {tri, order} = getTypeOrdreTri(etatCourant); // On récupère le tri et l'ordre
+  const pokemons = etatCourant.pokemons
+  const OrderedListePoke = pokemons.sort((a,b) => {
+    if(tri == "id") return order ? a.PokedexNumber - b.PokedexNumber : b.PokedexNumber - a.PokedexNumber
+    else if(tri == "Name") return order ? a.Name.localeCompare(b.Name) : b.Name.localeCompare(a.Name);
+    else if(tri == "Abilities") return order? a.Abilities.join("\n").localeCompare(b.Abilities.join("\n")) : b.Abilities.join("\n").localeCompare(a.Abilities.join("\n"));
+    else if(tri == "Types") return order? a.Types.join("\n").localeCompare(b.Types.join("\n")) : b.Types.join("\n").localeCompare(a.Types.join("\n"));
+  }).filter(x => x.Name.toLowerCase().includes(etatCourant.search ? etatCourant.search.toLowerCase() : ""));
     
+  return OrderedListePoke
+}
+
+  
+  function genereInfosPokemon(etatCourant) {    
   if (!etatCourant.pokemon) return { html: "", callbacks: {} };
     const pokemon = etatCourant.pokemon
 
