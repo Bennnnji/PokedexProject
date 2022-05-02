@@ -1,8 +1,15 @@
+/*global console, fetch, clearTimeout, setTimeout, document*/
+/*eslint no-undef: "error"*/
+/*eslint max-len: ["error", { "code": 80, "ignoreComments": true, "ignoreTemplateLiterals": true, "ignoreStrings": true}]*/
+/*eslint max-lines-per-function: ["error", {"max": 20, "skipComments": true, "skipBlankLines" : true}]*/
+
 /* ******************************************************************
  * Constantes de configuration
  * ****************************************************************** */
 const apiKey = "49ed5561-ddb3-433e-8a69-45ab8c1e120b"; // Clé du serveur
 const serverUrl = "https://lifap5.univ-lyon1.fr"; // Url du serveur
+
+
 
 /* ******************************************************************
  * Gestion de la boîte de dialogue (a.k.a. modal) d'affichage de
