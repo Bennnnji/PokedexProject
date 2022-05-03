@@ -262,12 +262,56 @@ function GenereHeaderListPokemon(etatCourant)
   }
 }
 
+/**
+* Détermine le nombre de pokémons afficher sur la page.
+* @param {Etat} etatCourant
+* @returns {number} un nombre de pokémons à afficher
+*/
+function getNbPokemonAAffiche(etatCourant) {
+  const nbPokemons = etatCourant.pokemons.filter(x => x.Name.toLowerCase().includes(etatCourant.search ? etatCourant.search.toLowerCase() : "")).length;
+  const nbPokemonsAffiches = etatCourant.nbPokemonsAffiches ? etatCourant.nbPokemonsAffiches : 10;
+  if (nbPokemonsAffiches > nbPokemons) return nbPokemons;
+  if (nbPokemonsAffiches < nbPokemons && nbPokemons < 10) return nbPokemons;
+  if (nbPokemonsAffiches < 10 && nbPokemons > 10) return 10;
+  return nbPokemonsAffiches;
+}
 
+/**
+* Génère le html du footer de la table de la liste des pokémons.
+* Contient deux boutons de pagination plus et moins pour afficher plus ou moins de pokémons.
+* On affiche aussi le nb de pokémon affichés sur le nb total de pokémons.
+* @param {Etat} etatCourant
+* @returns un objet contenant le html et les callbacks
+*/
+function genereFooterListePokemon(etatCourant) {
+  const nbPokemons = etatCourant.pokemons.filter((x) => x.Name.toLowerCase().includes(etatCourant.search ? etatCourant.search.toLowerCase() : "")).length; // nb total de pokémons qui peuvent être affichés
+  const nbPokemonsAffiches = getNbPokemonAAffiche(etatCourant) // nb de pokémons affichés
+  return {
+      html: `<div class="has-text-centered butons">
+                  <button id="btn-moins" class="button is-primary">Show -</button>
+                  <button id="btn-plus" class="button is-primary">Show +</button>
+              </div>
+              <div class="has-text-centered">
+                  <strong>${nbPokemonsAffiches}</strong>/<strong>${nbPokemons}</strong> Pokemons
+              </div>`,
+      callbacks: {
+          "btn-plus": {
+              onclick: () => majEtatEtPage(etatCourant, {nbPokemonsAffiches: nbPokemonsAffiches + 10 < nbPokemons ? nbPokemonsAffiches + 10 : nbPokemons}),
+          },
+          "btn-moins": {
+              onclick: () => majEtatEtPage(etatCourant, {nbPokemonsAffiches: nbPokemonsAffiches - 10 > 9 ? nbPokemonsAffiches - 10 : nbPokemons > 10 ? 10 : nbPokemons}),
+          }
+      }
+  }              
+}
 
 function genereListPokemon(PokeToShow,etatCourant) {
   const header = GenereHeaderListPokemon(etatCourant);
+  const footer = genereFooterListePokemon(etatCourant);
   const {tri, order} = getTypeOrdreTri(etatCourant); // On récupère le tri et l'ordre
-  const ligneTab = PokeToShow.map((pokemon) => `<tr id="pokemon-${pokemon.PokedexNumber}" class="${etatCourant.pokemon && etatCourant.pokemon.PokedexNumber ==  pokemon.PokedexNumber ? "is-selected" : ""}">
+  
+  const ligneTab = PokeToShow.map((pokemon) => 
+  `<tr id="pokemon-${pokemon.PokedexNumber}" class="${etatCourant.pokemon && etatCourant.pokemon.PokedexNumber ==  pokemon.PokedexNumber ? "is-selected" : ""}">
   <td><img src="${pokemon.Images.Detail}" width="74" alt="${pokemon.Name}"/></td>
   <td>${pokemon.PokedexNumber}</td>
   <td>${pokemon.Name}</td>
@@ -288,10 +332,13 @@ function genereListPokemon(PokeToShow,etatCourant) {
                 ${header.html} 
                 ${ligneTab} 
                </table>
+               ${footer.html}
         `,
-        callbacks:{...callbacks.reduce((acc, cur) => ({...acc, ...cur }), {}), ...header.callbacks}
+        callbacks:{...callbacks.reduce((acc, cur) => ({...acc, ...cur }), {}), ...header.callbacks, ...footer.callbacks}
       }
 }
+
+
 
   function PokemonToShow(etatCourant)
 {
@@ -399,7 +446,11 @@ function genereSearchBar(etatCourant)
 
 function generePagePokedex(etatCourant) {
     const PokeToShow = PokemonToShow(etatCourant)
-    const TabPokemon = genereListPokemon(PokeToShow,etatCourant)
+    // On récupère le nombre de pokémons à afficher
+    const nbPokemonsAffiches = getNbPokemonAAffiche(etatCourant);
+    // On récupère les pokemons à afficher
+    const pokemonsAffiches = PokeToShow.slice(0, nbPokemonsAffiches);
+    const TabPokemon = genereListPokemon(pokemonsAffiches,etatCourant)
     const pokemonInfos = genereInfosPokemon(etatCourant)
     const SearchBar = genereSearchBar(etatCourant)
     const html = ` ${SearchBar.html}
