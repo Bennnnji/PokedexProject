@@ -3,12 +3,12 @@
         -> https://eslint.org/demo 
 */
 
-/*global console, fetch, clearTimeout, setTimeout, document*/
+/*global console, fetch, document*/
 /*eslint no-undef: "error"*/
 /*exported apiKey, serverUrl*/
 /*eslint no-unused-vars: "error"*/
 /*eslint max-len: ["error", { "code": 80, "ignoreComments": true, "ignoreTemplateLiterals": true, "ignoreStrings": true}]*/
-/*eslint max-lines-per-function: ["error", {"max": 21, "skipComments": true, "skipBlankLines" : true}]*/ 
+/*eslint max-lines-per-function: ["error", {"max": 21, "skipComments": true, "skipBlankLines" : true}]*/
 
 
 /* ******************************************************************
@@ -143,7 +143,7 @@ function genereModaleLoginFooter(etatCourant) {
         html: FooterHTML.html,
         callbacks: {
             "closeB": {
-                onclick: () => majEtatEtPage(etatCourant, { loginModal: false }),
+              onclick: () => majEtatEtPage(etatCourant, { loginModal: false }),
             },
             "ValiderB":{
               onclick: () => {const apiKey = document.getElementById("modal-login-input").value;
@@ -175,7 +175,7 @@ function genereModaleLogin(etatCourant) {
           ${footer.html}
         </div>
       </div>`,
-        callbacks: {...header.callbacks, ...footer.callbacks, ...body.callbacks },
+      callbacks:{...header.callbacks, ...footer.callbacks, ...body.callbacks }
     };
 }
 
