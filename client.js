@@ -1,7 +1,15 @@
+/*
+    Configuration de ESLint pour le projet
+        -> https://eslint.org/demo 
+*/
+
 /*global console, fetch, clearTimeout, setTimeout, document*/
 /*eslint no-undef: "error"*/
+/*exported apiKey, serverUrl*/
+/*eslint no-unused-vars: "error"*/
 /*eslint max-len: ["error", { "code": 80, "ignoreComments": true, "ignoreTemplateLiterals": true, "ignoreStrings": true}]*/
-/*eslint max-lines-per-function: ["error", {"max": 20, "skipComments": true, "skipBlankLines" : true}]*/
+/*eslint max-lines-per-function: ["error", {"max": 21, "skipComments": true, "skipBlankLines" : true}]*/ 
+
 
 /* ******************************************************************
  * Constantes de configuration
@@ -60,6 +68,7 @@ function lanceWhoamiEtInsereLogin(etatCourant, apiKey) {
  * Génère le code HTML du corps de la modale de login. On renvoie en plus un
  * objet callbacks vide pour faire comme les autres fonctions de génération,
  * mais ce n'est pas obligatoire ici.
+ * Affiche nottament les erreurs lors de la validation de la clé API
  * @param {Etat} etatCourant
  * @returns un objet contenant le code HTML dans le champ html et un objet vide
  * dans le champ callbacks
@@ -94,7 +103,7 @@ function genereModaleLoginHeader(etatCourant) {
               </header>`,
         callbacks: {
             "btn-close-login-modal1": {
-                onclick: () => majEtatEtPage(etatCourant, { loginModal: false }),
+                onclick:() => majEtatEtPage(etatCourant, { loginModal:false }),
                 
             },
         },
@@ -102,22 +111,36 @@ function genereModaleLoginHeader(etatCourant) {
 }
 
 /**
- * Génère le code HTML du base de page de la modale de login et les callbacks associés.
+ * Genere le code html des boutons du footer de la modalde de login
+ * @param {Etat} etatCourant 
+ * @returns un objet contenant le code HTML
+ */
+function genereHTMLModaleLoginFooter(etatCourant)
+{
+  const BoutonValider = etatCourant.login ? "" : `<button id="ValiderB" tab-index="0" class="is-success button">Valider</button>`;
+  const BoutonFermer = `<button id="closeB" tab-index="0" class="button">Fermer</button>`
+    return {
+        html: `
+        <footer class="modal-card-foot" style="justify-content: flex-end">
+        ${BoutonValider}
+        ${BoutonFermer}
+        </footer>
+        `,
+        callbacks:{}
+    }
+}
+
+/**
+ * Génère le code HTML du bas de page de la modale de login et les callbacks associés.
  *
  * @param {Etat} etatCourant
  * @returns un objet contenant le code HTML dans le champ html et la description
  * des callbacks à enregistrer dans le champ callbacks
  */
 function genereModaleLoginFooter(etatCourant) {
-  const BoutonValider = etatCourant.login ? "" : `<button id="ValiderB" tab-index="0" class="is-success button">Valider</button>`;
-  const BoutonFermer = `<button id="closeB" tab-index="0" class="button">Fermer</button>`
+  const FooterHTML = genereHTMLModaleLoginFooter(etatCourant);
     return {
-        html: `
-  <footer class="modal-card-foot" style="justify-content: flex-end">
-  ${BoutonValider}
-  ${BoutonFermer}
-  </footer>
-  `,
+        html: FooterHTML.html,
         callbacks: {
             "closeB": {
                 onclick: () => majEtatEtPage(etatCourant, { loginModal: false }),
@@ -173,6 +196,7 @@ function afficheModaleConnexion(etatCourant) {
 /**
  * Génère le code HTML et les callbacks pour la partie droite de la barre de
  * navigation qui contient le bouton de login.
+ * Change en fonction de si l'utilisateur est connecté ou non
  * @param {Etat} etatCourant
  * @returns un objet contenant le code HTML dans le champ html et la description
  * des callbacks à enregistrer dans le champ callbacks
@@ -206,54 +230,74 @@ function genereBoutonConnexion(etatCourant) {
 function genereBarreNavigation(etatCourant) {
     const connexion = genereBoutonConnexion(etatCourant);
     return {
-        html: `
-  <nav class="navbar" role="navigation" aria-label="main navigation">
-    <div class="navbar-start">
-      <div class="navbar-item">
-          <a id="btn-pokedex" class="button is-light"> Pokedex </a>
-          <a id="btn-combat" class="button is-light"> Combat </a>
-      </div></div>
-      <div class="navbar-end">
-      ${connexion.html}
-      </div>
-    </div>
-  </nav>`,
-        callbacks: {
-            ...connexion.callbacks,
-            "btn-pokedex": { onclick: () => console.log("click bouton pokedex") },
-        },
+      html:`
+      <nav class="navbar" role="navigation" aria-label="main navigation">
+        <div class="navbar-start">
+          <div class="navbar-item">
+              <a id="btn-pokedex" class="button is-light"> Pokedex </a>
+              <a id="btn-combat" class="button is-light"> Combat </a>
+          </div>
+        </div>
+        <div class="navbar-end">
+          ${connexion.html}
+        </div>
+      </nav>`,
+      callbacks: connexion.callbacks
     };
 }
 
 /**
- * Récupèrer le type et l'ordre de tri de la liste des pokémons
+ * Récupèrer le type et l'ordre de tri dans le tableau de pokemons
  * @param {Etat} etatCourant
  * @returns un objet contenant le type et l'ordre de tri
  */
 function getTypeOrdreTri(etatCourant) {
   const sortType = etatCourant.sortType ? etatCourant.sortType : "id";
-  const sortOrder = etatCourant.sortOrder != undefined ? etatCourant.sortOrder : true;
+  const sortOrder = etatCourant.sortOrder!=undefined?etatCourant.sortOrder:true;
   return {
     tri: sortType,
     order: sortOrder,
   }
 }
 
-function GenereHeaderListPokemon(etatCourant)
-{
+/**
+ * Genere le header du tableau de pokemons avec des angles orientées en haut ou en bas selon l'ordre de tri que l'on souhaite
+ * (si l'on clique sur un titre pour trié, le tri va se faire dans l'ordre croissant tout d'abord, et le deuxieème clique
+ * inversera cette ordre etc.)
+ * @param {Etat} etatCourant 
+ * @returns un objet contenant le code HTML
+ */
+function GenereHTMLHeaderListPokemon(etatCourant){
   const {tri, order} = getTypeOrdreTri(etatCourant); // On récupère le tri et l'ordreb
   return {
-      html: ` <thead>
-                <tr>
-                  <th>Image</th>
-                  <th id="idSort">#<i class="${tri == "id" ? order ? "fas fa-angle-up" : "fas fa-angle-down" : ""}"></i></th>
-                  <th id="NameSort">Name<i class="${tri == "Name" ? order ? "fas fa-angle-up" : "fas fa-angle-down" : ""}"></i></th>
-                  <th id="AbilitiesSort">Abilities<i class="${tri == "Abilities" ? order ? "fas fa-angle-up" : "fas fa-angle-down" : ""}"></i></th>
-                  <th id="TypesSort">Types<i class="${tri == "Types" ? order ? "fas fa-angle-up" : "fas fa-angle-down" : ""}"></i></th>
-                </tr>
-              </thead>
-            `,
-      callbacks: { // On fusionne les callbacks avec le reduce car c'est pas un objet mais plutôt une liste 
+    html: 
+    `<thead>
+      <tr>
+        <th>Image</th>
+        <th id="idSort">#<i class="${tri == "id" ? order ? "fas fa-angle-up" : "fas fa-angle-down" : ""}"></i></th>
+        <th id="NameSort">Name<i class="${tri == "Name" ? order ? "fas fa-angle-up" : "fas fa-angle-down" : ""}"></i></th>
+        <th id="AbilitiesSort">Abilities<i class="${tri == "Abilities" ? order ? "fas fa-angle-up" : "fas fa-angle-down" : ""}"></i></th>
+        <th id="TypesSort">Types<i class="${tri == "Types" ? order ? "fas fa-angle-up" : "fas fa-angle-down" : ""}"></i></th>
+      </tr>
+    </thead>`,
+
+    callbacks:{}
+  }
+}
+
+/**
+ * Genere le header du tableau de pokemons, avec des callbacks sur les titres de chaques colonnes pour 
+ * pouvoir trier selon nos choix
+ * @param {Etat} etatCourant 
+ * @returns un objet contenant le code HTML et les callbacks
+ */
+
+function GenereHeaderListPokemon(etatCourant){
+  const {tri, order} = getTypeOrdreTri(etatCourant); // On récupère le tri et l'ordreb
+  const HeaderHTML = GenereHTMLHeaderListPokemon(etatCourant);
+  return {
+      html: HeaderHTML.html,
+      callbacks: { 
       "idSort" : {onclick : () => majEtatEtPage(etatCourant, {sortType : "id", sortOrder : tri != "id" ? true : !order})},
       "NameSort": {onclick : () => majEtatEtPage(etatCourant, {sortType : "Name", sortOrder : tri != "Name" ? true : !order})},
       "AbilitiesSort" : {onclick : () => majEtatEtPage(etatCourant, {sortType : "Abilities", sortOrder : tri != "Abilities" ? true : !order}) },
@@ -269,7 +313,7 @@ function GenereHeaderListPokemon(etatCourant)
 */
 function getNbPokemonAAffiche(etatCourant) {
   const nbPokemons = etatCourant.pokemons.filter(x => x.Name.toLowerCase().includes(etatCourant.search ? etatCourant.search.toLowerCase() : "")).length;
-  const nbPokemonsAffiches = etatCourant.nbPokemonsAffiches ? etatCourant.nbPokemonsAffiches : 10;
+  const nbPokemonsAffiches = etatCourant.nbPokemonsAffiches?etatCourant.nbPokemonsAffiches:10;
   if (nbPokemonsAffiches > nbPokemons) return nbPokemons;
   if (nbPokemonsAffiches < nbPokemons && nbPokemons < 10) return nbPokemons;
   if (nbPokemonsAffiches < 10 && nbPokemons > 10) return 10;
@@ -277,70 +321,12 @@ function getNbPokemonAAffiche(etatCourant) {
 }
 
 /**
-* Génère le html du footer de la table de la liste des pokémons.
-* Contient deux boutons de pagination plus et moins pour afficher plus ou moins de pokémons.
-* On affiche aussi le nb de pokémon affichés sur le nb total de pokémons.
-* @param {Etat} etatCourant
-* @returns un objet contenant le html et les callbacks
-*/
-function genereFooterListePokemon(etatCourant) {
-  const nbPokemons = etatCourant.pokemons.filter((x) => x.Name.toLowerCase().includes(etatCourant.search ? etatCourant.search.toLowerCase() : "")).length; // nb total de pokémons qui peuvent être affichés
-  const nbPokemonsAffiches = getNbPokemonAAffiche(etatCourant) // nb de pokémons affichés
-  return {
-      html: `<div class="has-text-centered butons">
-                  <button id="btn-moins" class="button is-primary">Show -</button>
-                  <button id="btn-plus" class="button is-primary">Show +</button>
-              </div>
-              <div class="has-text-centered">
-                  <strong>${nbPokemonsAffiches}</strong>/<strong>${nbPokemons}</strong> Pokemons
-              </div>`,
-      callbacks: {
-          "btn-plus": {
-              onclick: () => majEtatEtPage(etatCourant, {nbPokemonsAffiches: nbPokemonsAffiches + 10 < nbPokemons ? nbPokemonsAffiches + 10 : nbPokemons}),
-          },
-          "btn-moins": {
-              onclick: () => majEtatEtPage(etatCourant, {nbPokemonsAffiches: nbPokemonsAffiches - 10 > 9 ? nbPokemonsAffiches - 10 : nbPokemons > 10 ? 10 : nbPokemons}),
-          }
-      }
-  }              
-}
+ * Tri la liste de pokemon selon le type de tri (trié soit par : nom, id, abilitées, types) et si on a fait une recherche dans la barre de recherche
+ * @param {Etat} etatCourant 
+ * @returns une liste de pokemon trié et filtré
+ */
 
-function genereListPokemon(PokeToShow,etatCourant) {
-  const header = GenereHeaderListPokemon(etatCourant);
-  const footer = genereFooterListePokemon(etatCourant);
-  const {tri, order} = getTypeOrdreTri(etatCourant); // On récupère le tri et l'ordre
-  
-  const ligneTab = PokeToShow.map((pokemon) => 
-  `<tr id="pokemon-${pokemon.PokedexNumber}" class="${etatCourant.pokemon && etatCourant.pokemon.PokedexNumber ==  pokemon.PokedexNumber ? "is-selected" : ""}">
-  <td><img src="${pokemon.Images.Detail}" width="74" alt="${pokemon.Name}"/></td>
-  <td>${pokemon.PokedexNumber}</td>
-  <td>${pokemon.Name}</td>
-  <td>${pokemon.Abilities.join("</br>")}</td>
-  <td>${pokemon.Types.join("</br>")}</td>
-  </tr>`).join("")
-  
-  // On crée un tableau avec les callbacks pour chaque pokemon du tableau
-  const callbacks = PokeToShow.map((pokemon) => ({
-        [`pokemon-${pokemon.PokedexNumber}`]: {
-          onclick: () => {
-            console.log("click pokemon", pokemon.PokedexNumber);
-            majEtatEtPage(etatCourant, { pokemon: pokemon });
-          }}}))
-      
-      return {
-        html: `<table class="table is-fullwidth"> 
-                ${header.html} 
-                ${ligneTab} 
-               </table>
-               ${footer.html}
-        `,
-        callbacks:{...callbacks.reduce((acc, cur) => ({...acc, ...cur }), {}), ...header.callbacks, ...footer.callbacks}
-      }
-}
-
-
-
-  function PokemonToShow(etatCourant)
+function PokemonToShow(etatCourant)
 {
   const {tri, order} = getTypeOrdreTri(etatCourant); // On récupère le tri et l'ordre
   const pokemons = etatCourant.pokemons
@@ -354,82 +340,234 @@ function genereListPokemon(PokeToShow,etatCourant) {
   return OrderedListePoke
 }
 
-  
-  function genereInfosPokemon(etatCourant) {    
-  if (!etatCourant.pokemon) return { html: "", callbacks: {} };
-    const pokemon = etatCourant.pokemon
-
-    const html = ` <div class="card">
-                  <div class="card-header">
-                    <div class="card-header-title">${pokemon.JapaneseName} (#${pokemon.PokedexNumber})</div>
-                  </div>
-                  <div class="card-content">
-                    <article class="media">
-                      <div class="media-content">
-                        <h1 class="title">${pokemon.Name}</h1>
-                      </div>
-                    </article>
-                  </div>
-                  <div class="card-content">
-                    <article class="media">
-                      <div class="media-content">
-                        <div class="content has-text-left">
-                          <p>Hit points: ${pokemon.Attack}</p>
-                          <h3>Abilities</h3>
-                          <ul>
-                              <li>
-                                  ${pokemon.Abilities.join("</li><li>")}
-                              </li>
-                          </ul>
-                          <h3>Resistant against</h3>
-                          <ul>
-                              <li>
-                                  ${Object.keys(pokemon.Against).filter(x => pokemon.Against[x] < 1).join("</li><li>")}
-                              </li>
-                          </ul>
-                          <h3>Weak against</h3>
-                          <ul>
-                              <li>
-                                  ${Object.keys(pokemon.Against).filter(x => pokemon.Against[x] > 1).join("</li><li>")}
-                              </li>
-                          </ul>
-                            
-                          </ul>
-                        </div>
-                      </div>
-                      <figure class="media-right">
-                        <figure class="image is-475x475">
-                        
-                          <img
-                            class=""
-                            src="${pokemon.Images.Full}"
-                            alt="${pokemon.name}"
-                          />
-                        
-                        </figure>
-                      </figure>
-                    </article>
-                  ${etatCourant.login == undefined ? "" :` </div>
-                  <div class="card-footer">
-                    <article class="media">
-                      <div class="media-content">
-                        <button class="is-success button" tabindex="0">
-                          Ajouter à mon deck
-                        </button>
-                      </div>
-                    </article>
-                  </div>
-                </div>`}
-                  `
-
-
-
-    return {
-        html: html,
-        callbacks: {}
-    }
+/**
+ * Genere le contenu html des bouton pour afficher plus ou moins de pokemons dans le tableau
+ * @returns un objet contenant le code HTML
+ */
+function GenereBoutonPlusMoins()
+{
+  return{
+    html: `<div class="has-text-centered butons">
+            <button id="btn-moins" class="button is-primary">Show -</button>
+            <button id="btn-plus" class="button is-primary">Show +</button>
+          </div>`,
+    callbacks:{}
+  }
 }
 
+/**
+* Génère le html du footer de la table de la liste des pokémons.
+* Contient deux boutons de pagination plus et moins pour afficher plus ou moins de pokémons.
+* On affiche aussi le nb de pokémon affichés sur le nb total de pokémons.
+* @param {Etat} etatCourant
+* @returns un objet contenant le html et les callbacks
+*/
+function genereFooterListePokemon(etatCourant) {
+  // nb total de pokémons qui peuvent être affichés (après une recherche ou non)
+  const nbPokemons = etatCourant.pokemons.filter((x) => x.Name.toLowerCase().includes(etatCourant.search ? etatCourant.search.toLowerCase() : "")).length; 
+  // nb de pokémons affichés
+  const nbPokemonsAffiches = getNbPokemonAAffiche(etatCourant) 
+  const Boutons = GenereBoutonPlusMoins()
+  return {
+      html: `${Boutons.html}
+            <div class="has-text-centered">
+                <strong>${nbPokemonsAffiches}</strong>/<strong>${nbPokemons}</strong> Pokemons
+            </div>`,
+      callbacks: {
+          "btn-plus": {
+              onclick: () => majEtatEtPage(etatCourant, {nbPokemonsAffiches: nbPokemonsAffiches + 10 < nbPokemons ? nbPokemonsAffiches + 10 : nbPokemons}),
+          },
+          "btn-moins": {
+              onclick: () => majEtatEtPage(etatCourant, {nbPokemonsAffiches: nbPokemonsAffiches - 10 > 9 ? nbPokemonsAffiches - 10 : nbPokemons > 10 ? 10 : nbPokemons}),
+          }
+      }
+  }              
+}
+
+/**
+ * Genere le contenu html des infos de chaque pokemon qui se trouve dans le tableau (à gauche)
+ * @param {pokemon[]} PokeToShow une liste de pokemon après tri 
+ * @param {Etat} etatCourant 
+ * @returns un objet contenant le code HTML
+ */
+
+function GenereHTMLListPokemon(PokeToShow, etatCourant)
+{
+  return {
+    html : PokeToShow.map((pokemon) => 
+      `<tr id="pokemon-${pokemon.PokedexNumber}" class="${etatCourant.pokemon && etatCourant.pokemon.PokedexNumber ==  pokemon.PokedexNumber ? "is-selected" : ""}">
+      <td><img src="${pokemon.Images.Detail}" width="74" alt="${pokemon.Name}"/></td>
+      <td>${pokemon.PokedexNumber}</td>
+      <td>${pokemon.Name}</td>
+      <td>${pokemon.Abilities.join("</br>")}</td>
+      <td>${pokemon.Types.join("</br>")}</td>
+      </tr>`).join(""),
+    callbacks : {}
+  }
+}
+
+/**
+ * Genere le tableau de pokemons situé à gauche de l'écran
+ * @param {pokemon[]} PokeToShow une liste de pokemon après tri
+ * @param {Etat} etatCourant 
+ * @returns un objet contenant le code HTML et les callbacks
+ */
+function genereListPokemon(PokeToShow,etatCourant) {
+  const header = GenereHeaderListPokemon(etatCourant);
+  const footer = genereFooterListePokemon(etatCourant);
+  const ligneTab = GenereHTMLListPokemon(PokeToShow, etatCourant).html;
+  // On crée un tableau avec les callbacks pour chaque pokemon du tableau
+  //permet de cliquer sur chaque pokemon por afficher sa carte d'infos
+  const callbacks = PokeToShow.map((pokemon) => ({
+        [`pokemon-${pokemon.PokedexNumber}`]: {
+          onclick: () => {
+            //console.log("click pokemon", pokemon.PokedexNumber);
+            majEtatEtPage(etatCourant, { pokemon: pokemon });
+          }}})).reduce((acc, cur) => ({...acc, ...cur }), {})
+      
+      return {
+        html: `<table class="table is-fullwidth"> 
+                ${header.html} 
+                ${ligneTab} 
+               </table>
+               ${footer.html}
+        `,
+        callbacks:{...callbacks, ...header.callbacks, ...footer.callbacks}
+      }
+}
+
+
+
+/**
+ * Genere le contenu html du header de la carte du pokemon afficher
+ * (nom Japonnais, ID, Nom)
+ * @param {pokemon[]} pokemon une liste de pokemons 
+ * @returns un objet contenant le code HTML
+ */
+function GenereHeaderInfoPokemon(pokemon)
+{
+  return{
+    html: `
+    <div class="card-header">
+      <div class="card-header-title">${pokemon.JapaneseName} (#${pokemon.PokedexNumber})</div>
+    </div>
+    <div class="card-content">
+      <article class="media">
+        <div class="media-content">
+          <h1 class="title">${pokemon.Name}</h1>
+        </div>
+      </article>
+    </div>`
+  }
+}
+
+/**
+ * Genere le contenu html des infos du pokemon dans la carte afficher 
+ * (point d'attaques, Abilitées, Resistances, faiblesses)
+ * @param {pokemon[]} pokemon une liste de pokemons 
+ * @returns un objet contenant le code HTML
+ */
+
+function GenereBodyInfoPokemon(pokemon){
+  return {html : 
+    `<div class="media-content">
+        <div class="content has-text-left">
+          <p>Hit points: ${pokemon.Attack}</p>
+          <h3>Abilities</h3>
+          <ul>
+            <li>${pokemon.Abilities.join("</li><li>")}</li>
+          </ul>
+          <h3>Resistant against</h3>
+          <ul>
+            <li>${Object.keys(pokemon.Against).filter(x => pokemon.Against[x] < 1).join("</li><li>")}</li>
+          </ul>
+          <h3>Weak against</h3>
+          <ul>
+            <li>${Object.keys(pokemon.Against).filter(x => pokemon.Against[x] > 1).join("</li><li>")}</li>
+          </ul> 
+        </div>
+      </div>`
+  }
+}
+/**
+ * Genere le contenu html de l'image du pokemon affiché par la carte
+ * @param {pokemon[]} pokemon une liste de pokemons
+ * @returns un objet contenant le code HTML
+ */
+
+function GenereBodyImageInfoPokemon(pokemon)
+{
+  return{
+    html : `
+    <figure class="media-right">
+      <figure class="image is-475x475">
+        <img
+        class=""
+        src="${pokemon.Images.Full}"
+        alt="${pokemon.name}"
+        />
+      </figure>
+    </figure>`
+  }
+}
+/**
+ * Genere le contenu html du footer de la carte du pokemon 
+ * (bouton ajouter dans le deck si l'utilisateur est connecté)
+ * @param {Etat} etatCourant 
+ * @returns un objet contenant le code HTML
+ */
+
+function GenereFooterInfoPokemon(etatCourant)
+{
+  return{
+    html:`
+    ${etatCourant.login == undefined ? "" :` 
+    <div class="card-footer">
+      <article class="media">
+        <div class="media-content">
+          <button class="is-success button" tabindex="0">
+            Ajouter à mon deck
+          </button>
+        </div>
+      </article>
+    </div>`
+    }`
+  }
+}
+
+/**
+* Génère le contenu html de la carte du pokemon qu'ont veut afficher à droite
+* @param {Etat} etatCourant
+* @returns un objet contenant le code HTML 
+*/
+function genereInfosPokemon(etatCourant) {    
+  if (!etatCourant.pokemon) return { html: "", callbacks: {} };
+  const header = GenereHeaderInfoPokemon(etatCourant.pokemon);
+  const body = GenereBodyInfoPokemon(etatCourant.pokemon);
+  const bodyImage = GenereBodyImageInfoPokemon(etatCourant.pokemon);
+  const footer = GenereFooterInfoPokemon(etatCourant);
+  const html =` <div class="card">
+                  ${header.html}
+                  <div class="card-content">
+                    <article class="media">
+                      ${body.html}
+                      ${bodyImage.html}
+                    </article>
+                  </div>
+                  ${footer.html}
+                </div>`
+  return {
+    html: html
+  }
+}
+
+/**
+* Génère le contenu html avec les callbacks qui vont avec de la barre de recherche
+* Callbacks -> c'est lorsqu'on va appuyer sur la touche entrée que la recherche va s'éffectuée
+* l'appuie de la touche entrée sur un champ vide retournera tout les pokemons 
+* @param {Etat} etatCourant
+* @returns un objet contenant le code HTML et les callbacks
+*/
 function genereSearchBar(etatCourant)
 {
     return {
@@ -444,51 +582,74 @@ function genereSearchBar(etatCourant)
     }
 }
 
+/**
+* Génère le contenu html de la page Pokedex du choix entre tous les pokemon ou les pokemon de l'utilisateur.
+* @returns un objet contenant le code HTML
+*/
+function GenereHTMLPagePokedex()
+{
+  return{
+    html:`<div class="tabs is-centered">
+            <ul>
+              <li class="is-active" id="tab-all-pokemons">
+                <a>Tous les pokemons</a>
+              </li>
+              <li id="tab-tout"><a>Mes pokemons</a></li>
+             </ul>
+          </div>`
+  }
+}
+
+/**
+* Génère le contenu de la page Pokedex du tableau de pokemons.
+* @param {Etat} etatCourant
+* @returns un objet contenant le code HTML et les callbacks du tableau 
+*/
+function GenereListPokemon(etatCourant)
+{
+  const NavPokemon = GenereHTMLPagePokedex() 
+  const PokeToShow = PokemonToShow(etatCourant)
+  const nbPokemonsAffiches = getNbPokemonAAffiche(etatCourant);// On récupère le nombre de pokémons à afficher
+  const pokemonsAffiches = PokeToShow.slice(0, nbPokemonsAffiches);// On récupère les pokemons à afficher après la découpe
+  const TabPoke = genereListPokemon(pokemonsAffiches,etatCourant);
+  return {
+    html :`${NavPokemon.html}              
+             <div id="tbl-pokemons">
+             ${TabPoke.html}
+             </div>`,
+    callbacks: TabPoke.callbacks
+  }
+}
+
+/**
+* Génère le contenu de la page Pokedex.
+* @param {Etat} etatCourant
+* @returns un objet contenant le code HTML et les callbacks
+*/
 function generePagePokedex(etatCourant) {
-    const PokeToShow = PokemonToShow(etatCourant)
-    // On récupère le nombre de pokémons à afficher
-    const nbPokemonsAffiches = getNbPokemonAAffiche(etatCourant);
-    // On récupère les pokemons à afficher
-    const pokemonsAffiches = PokeToShow.slice(0, nbPokemonsAffiches);
-    const TabPokemon = genereListPokemon(pokemonsAffiches,etatCourant)
-    const pokemonInfos = genereInfosPokemon(etatCourant)
-    const SearchBar = genereSearchBar(etatCourant)
-    const html = ` ${SearchBar.html}
-                <section class="section">
-                  <div class="columns">
-                    <div class="column">
-                      <div class="tabs is-centered">
-                        <ul>
-                          <li class="is-active" id="tab-all-pokemons">
-                            <a>Tous les pokemons</a>
-                          </li>
-                          <li id="tab-tout"><a>Mes pokemons</a></li>
-                        </ul>
-                      </div>
-                      <div id="tbl-pokemons">
-                      ${TabPokemon.html}
-                      </div>
-                    </div>
-                    <div class="column">
-                      ${pokemonInfos.html}
-                    </div>
+  const TabPokemon = GenereListPokemon(etatCourant);
+  const pokemonInfos = genereInfosPokemon(etatCourant);     
+  const SearchBar = genereSearchBar(etatCourant)
+  const html = ` ${SearchBar.html}
+              <section class="section">
+                <div class="columns">
+                  <div class="column">
+                    ${TabPokemon.html}
                   </div>
-                </section>`
-
-
-
-    return {
-        html: html,
-        callbacks: {...TabPokemon.callbacks, ...pokemonInfos.callbacks, ...SearchBar.callbacks}
-    }
+                  <div class="column">
+                    ${pokemonInfos.html}
+                  </div>
+                </div>
+              </section>`
+  return {
+      html: html,
+      callbacks: {...TabPokemon.callbacks, ...SearchBar.callbacks}
+  }
 }
 
 function genereCorpsPage(etatCourant) {
     return generePagePokedex(etatCourant);
 }
-
-
-
 
 /**
  * Génére le code HTML de la page ainsi que l'ensemble des callbacks à
@@ -512,7 +673,8 @@ function generePage(etatCourant) {
     // d'éléments en commun.
     return {
         html: barredeNavigation.html + modaleLogin.html + CorpsPage.html,
-        callbacks: {...barredeNavigation.callbacks, ...modaleLogin.callbacks, ...CorpsPage.callbacks, },
+        callbacks: {...barredeNavigation.callbacks, 
+          ...modaleLogin.callbacks, ...CorpsPage.callbacks, },
     };
 }
 
@@ -590,7 +752,8 @@ function getPokemonList() {
         .then(async(response) => {
             // Si la réponse est bonne, on retourne la liste des pokémons
             if (response.status == 200) {
-                const data = (await response.json()).sort((a, b) => a.PokedexNumber - b.PokedexNumber); // On attend la réponse et on met dans data grâce à "AWAIT"
+                const data = (await response.json()).sort(
+                  (a, b) => a.PokedexNumber - b.PokedexNumber); // On attend la réponse et on met dans data grâce à "AWAIT"
                 return data;
             } else {
                 // Sinon on retourne un tableau vide
