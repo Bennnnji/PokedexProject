@@ -63,7 +63,7 @@ suite("Tests pour la fonction GetNbPokemonToDisplay", function () {
     chai.assert.equal(PokeToShow, 6);
   });
 
-  test("#7 Si la recherche est introuvale => valeur inexistante dans le table de pokemons", function () {
+  test("#7 Si la recherche est introuvable => valeur inexistante dans la liste de pokemons", function () {
     const etatCourant = { pokemons: pokemons, search: "rezer" };
     const PokeToShow = GetNbPokemonToDisplay(etatCourant);
     chai.assert.equal(PokeToShow, 0);
@@ -108,7 +108,7 @@ suite("Tests pour la fonction PokemonToShow", function () {
       Verif
     );
   });
-  test("#4 Si la recherche est introuvale => valeur inexistante dans le table de pokemons", function () {
+  test("#4 Si la recherche est introuvable => valeur inexistante dans la liste de pokemons", function () {
     const etatCourant = { pokemons: pokemons, search: "erzerz" };
     const pokeToShow = PokemonToShow(etatCourant);
     chai.assert.equal(pokeToShow.length, 0);
