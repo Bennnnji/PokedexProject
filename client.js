@@ -296,10 +296,14 @@ function GenereHeaderListPokemon(etatCourant) {
   return {
     html: HeaderHTML.html,
     callbacks: {
-      "idSort": { onclick: () => majEtatEtPage(etatCourant, { sortType: "id", sortOrder: tri != "id" ? true : !order }) },
-      "NameSort": { onclick: () => majEtatEtPage(etatCourant, { sortType: "Name", sortOrder: tri != "Name" ? true : !order }) },
-      "AbilitiesSort": { onclick: () => majEtatEtPage(etatCourant, { sortType: "Abilities", sortOrder: tri != "Abilities" ? true : !order }) },
-      "TypesSort": { onclick: () => majEtatEtPage(etatCourant, { sortType: "Types", sortOrder: tri != "Types" ? true : !order }) },
+      "idSort": { onclick: () => majEtatEtPage(etatCourant, {
+            sortType: "id", sortOrder: tri != "id" ? true : !order})},
+      "NameSort": { onclick: () => majEtatEtPage(etatCourant, { 
+        sortType: "Name", sortOrder: tri != "Name" ? true : !order })},
+      "AbilitiesSort": { onclick: () => majEtatEtPage(etatCourant, { 
+        sortType: "Abilities", sortOrder: tri != "Abilities" ? true : !order})},
+      "TypesSort": { onclick: () => majEtatEtPage(etatCourant, { 
+        sortType: "Types", sortOrder: tri != "Types" ? true : !order })},
     }
   }
 }
@@ -309,7 +313,7 @@ function GenereHeaderListPokemon(etatCourant) {
 * @param {Etat} etatCourant
 * @returns {number} un nombre de pokémons à afficher
 */
-function getNbPokemonAAffiche(etatCourant) {
+function GetNbPokemonToDisplay(etatCourant) {
   const nbPokemons = etatCourant.pokemons.filter(
     x => x.Name.toLowerCase().includes(
       etatCourant.search ? etatCourant.search.toLowerCase() : "")).length;
@@ -333,11 +337,18 @@ function PokemonToShow(etatCourant) {
   const { tri, order } = getTypeOrdreTri(etatCourant); // On récupère le tri et l'ordre
   const pokemons = etatCourant.pokemons
   const OrderedListePoke = pokemons.sort((a, b) => {
-    if (tri == "id") return order ? a.PokedexNumber - b.PokedexNumber : b.PokedexNumber - a.PokedexNumber
-    else if (tri == "Name") return order ? a.Name.localeCompare(b.Name) : b.Name.localeCompare(a.Name);
-    else if (tri == "Abilities") return order ? a.Abilities.join("\n").localeCompare(b.Abilities.join("\n")) : b.Abilities.join("\n").localeCompare(a.Abilities.join("\n"));
-    else if (tri == "Types") return order ? a.Types.join("\n").localeCompare(b.Types.join("\n")) : b.Types.join("\n").localeCompare(a.Types.join("\n"));
-  }).filter(x => x.Name.toLowerCase().includes(etatCourant.search ? etatCourant.search.toLowerCase() : ""));
+    if (tri == "id") return order ?
+      a.PokedexNumber - b.PokedexNumber : b.PokedexNumber - a.PokedexNumber
+    else if (tri == "Name") return order ?
+      a.Name.localeCompare(b.Name) : b.Name.localeCompare(a.Name);
+    else if (tri == "Abilities") return order ?
+      a.Abilities.join("\n").localeCompare(b.Abilities.join("\n")) :
+      b.Abilities.join("\n").localeCompare(a.Abilities.join("\n"));
+    else if (tri == "Types") return order ?
+      a.Types.join("\n").localeCompare(b.Types.join("\n")) :
+      b.Types.join("\n").localeCompare(a.Types.join("\n"));
+  }).filter(x => x.Name.toLowerCase().includes(
+    etatCourant.search ? etatCourant.search.toLowerCase() : ""));
 
   return OrderedListePoke
 }
@@ -393,9 +404,11 @@ function GenereCallbBoutonPM(etatCourant, nbPokeAff, nbPoke) {
 */
 function genereFooterListePokemon(etatCourant) {
   // nb total de pokémons qui peuvent être affichés (après une recherche ou non)
-  const nbPoke = etatCourant.pokemons.filter((x) => x.Name.toLowerCase().includes(etatCourant.search ? etatCourant.search.toLowerCase() : "")).length;
+  const nbPoke = etatCourant.pokemons.filter((x) =>
+    x.Name.toLowerCase().includes(
+      etatCourant.search ? etatCourant.search.toLowerCase() : "")).length;
   // nb de pokémons affichés
-  const nbPokeAff = getNbPokemonAAffiche(etatCourant)
+  const nbPokeAff = GetNbPokemonToDisplay(etatCourant)
   const BoutonsHtml = GenereHTMLBoutonPM();
   const BoutonsCallbacks = GenereCallbBoutonPM(etatCourant, nbPokeAff, nbPoke);
   return {
@@ -639,7 +652,12 @@ function genereSearchBar(etatCourant) {
                   <input id="SearchBar" class="input" placeholder="Chercher un pokemon" type="text" value="">
               </div></div>` ,
     callbacks: {
-      "SearchBar": { onkeyup: (event) => event.code == "Enter" ? majEtatEtPage(etatCourant, { search: document.getElementById("SearchBar").value }) : null }
+      "SearchBar": {
+        onkeyup: (event) => event.code == "Enter" ?
+          majEtatEtPage(etatCourant, {
+            search: document.getElementById("SearchBar").value
+          }) : null
+      }
     }
   }
 }
@@ -669,7 +687,7 @@ function GenereHTMLPagePokedex() {
 function GenereListPokemon(etatCourant) {
   const NavPokemon = GenereHTMLPagePokedex()
   const PokeToShow = PokemonToShow(etatCourant)
-  const nbPokemonsAffiches = getNbPokemonAAffiche(etatCourant);// On récupère le nombre de pokémons à afficher
+  const nbPokemonsAffiches = GetNbPokemonToDisplay(etatCourant);// On récupère le nombre de pokémons à afficher
   const pokemonsAffiches = PokeToShow.slice(0, nbPokemonsAffiches);// On récupère les pokemons à afficher après la découpe
   console.log(pokemonsAffiches);
   const TabPoke = genereListPokemon(pokemonsAffiches, etatCourant);
